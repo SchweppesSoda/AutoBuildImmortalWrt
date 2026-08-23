@@ -1,0 +1,5 @@
+# sha256 scope path-within-wukongdaily/apk
+# scope is either common or one of the image roles (Router/Gateway).
+a205d32cd33d6b660e322f14627dd7cd1c68bb4f761dcf808937ce8a8644830b Router run/x86/lucky/luci-app-lucky-3.0.3-r15.apk
+c3d424234c866416b41a249b8907111a5892dcbd534acc25922bf309aa60b692 Router run/x86/lucky/luci-i18n-lucky-zh-cn-26.021.55893~28c17bc.apk
+852ef9f77e991772f7d41154a1d41e5f20142ca10808a36ef5af19e008c1257b Router run/x86/lucky/lucky-2.27.2-r1.apk

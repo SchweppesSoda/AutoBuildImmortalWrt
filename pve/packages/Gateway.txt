@@ -1,0 +1,11 @@
+# Gateway: OpenClash and its official nftables/APK dependencies.
+luci-app-openclash
+luci-compat
+kmod-tun
+kmod-inet-diag
+kmod-nft-tproxy
+-dnsmasq
+dnsmasq-full
+ruby
+ruby-yaml
+unzip

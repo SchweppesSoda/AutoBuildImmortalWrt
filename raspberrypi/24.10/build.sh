@@ -26,7 +26,7 @@ else
 fi
 
 
-LUCI_VERSION="${LUCI_VERSION:-24.10.4}"  # workflow 传入的luci版本，默认为24.10.4
+LUCI_VERSION="${LUCI_VERSION:-24.10.6}"  # workflow 传入的luci版本，默认为24.10.6
 # 根据 PROFILE 选择 CPU_ARCH
 case "$PROFILE" in
   rpi-3)
@@ -112,7 +112,7 @@ if echo "$PACKAGES" | grep -q "luci-app-ssr-plus"; then
     echo "✅ 已选择 luci-app-ssr-plus，添加 mihomo core"
     mkdir -p files/usr/bin
     # Download mihomo
-    MIHOMO_URL="https://github.com/MetaCubeX/mihomo/releases/download/v1.19.24/mihomo-linux-arm64-v1.19.24.gz"
+    MIHOMO_URL="https://github.com/MetaCubeX/mihomo/releases/download/v1.19.29/mihomo-linux-arm64-v1.19.29.gz"
     mkdir -p files/usr/bin
     wget -qO- "$MIHOMO_URL" | gzip -dc > files/usr/bin/mihomo
     chmod +x files/usr/bin/mihomo

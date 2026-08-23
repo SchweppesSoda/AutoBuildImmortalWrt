@@ -1,0 +1,17 @@
+ImmortalWrt Gateway（OpenClash/PVE）首次启动清单
+===============================================
+
+管理地址：@GATEWAY_LAN_IP@（掩码 @LAN_NETMASK@）
+默认网关/DNS：@ROUTER_LAN_IP@
+网卡映射：eth0=LAN/net0（仅一个 VirtIO 网卡）
+DHCP：已关闭
+OpenClash：已预装但默认禁用
+
+1. 先通过 PVE 控制台执行 passwd 设置 root 密码。
+2. 确认 @ROUTER_LAN_IP@ 可达，且网络中只有主路由提供 DHCP。
+3. 在 LuCI 中配置 OpenClash；不要把订阅 URL 或密钥提交到 Git。
+4. 先用一台测试客户端手工设置网关/DNS 为 @GATEWAY_LAN_IP@，验证后再配置主路由策略。
+5. 若旁路网关异常，把客户端网关和 DNS 改回 @ROUTER_LAN_IP@ 即可绕过。
+
+构建信息：cat /etc/pve-build-info
+首启日志：cat /root/pve-firstboot.log

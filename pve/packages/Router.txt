@@ -1,0 +1,31 @@
+# Router: dual-PPPoE and policy routing.
+ppp
+ppp-mod-pppoe
+odhcp6c
+luci-proto-ipv6
+mwan3
+luci-app-mwan3
+luci-i18n-mwan3-zh-cn
+
+# Monitoring and basic administration.
+nlbwmon
+luci-app-nlbwmon
+luci-i18n-nlbwmon-zh-cn
+etherwake
+luci-app-wol
+luci-i18n-wol-zh-cn
+
+# Pinned third-party Lucky packages are supplied through vendor-packages.lock.
+lucky
+luci-app-lucky
+luci-i18n-lucky-zh-cn
+
+# x86/PVE forwarding efficiency. irqbalance is enabled on first boot;
+# software flow offload and SQM are installed but deliberately left disabled.
+irqbalance
+luci-app-irqbalance
+luci-i18n-irqbalance-zh-cn
+kmod-nft-offload
+sqm-scripts
+luci-app-sqm
+luci-i18n-sqm-zh-cn

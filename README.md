@@ -1,4 +1,19 @@
-# [新手指导](https://github.com/wukongdaily/AutoBuildImmortalWrt/wiki) 👈🏻
+# 本 Fork：通用 PVE 双 ImmortalWrt
+
+本 Fork 新增两套可复用的 x86-64 ImmortalWrt 25.12 镜像：
+
+- `Router`：双 PPPoE、mwan3、Lucky、DHCPv4 和保守的转发优化默认值。
+- `Gateway`：单臂旁路网关，关闭 DHCP，预装 OpenClash 但默认不接管流量。
+- Router、Gateway 地址和网络掩码均为工作流输入；公开默认值仅用于示例。
+- 两套镜像均使用 Argon，且不包含任何生产凭据、订阅、设备清单或现场策略。
+
+`master` 保留为上游同步基线，通用 PVE 定制位于 `pve-dual` 分支。在 GitHub Actions 手动运行 **Build PVE dual ImmortalWrt 25.12**，即可生成两套 combined EFI 镜像。构建设计和通用部署步骤见 [PVE 双镜像文档](./docs/README.md)。
+
+下面保留原项目说明，供其他硬件工作流参考。
+
+---
+
+# [原项目新手指导](https://github.com/wukongdaily/ImmortalWrt-ImageBuilder/wiki) 👈🏻
 # ImmortalWrt-ImageBuilder
 
 **⚠️ 重要声明**
@@ -12,22 +27,22 @@
 
 ---
 
-[![GitHub](https://img.shields.io/github/license/wukongdaily/AutoBuildImmortalWrt.svg?label=LICENSE&logo=github&logoColor=%20)](https://github.com/wukongdaily/AutoBuildImmortalWrt/blob/master/LICENSE)
-![GitHub Stars](https://img.shields.io/github/stars/wukongdaily/AutoBuildImmortalWrt.svg?style=flat&logo=appveyor&label=Stars&logo=github)
-![GitHub Forks](https://img.shields.io/github/forks/wukongdaily/AutoBuildImmortalWrt.svg?style=flat&logo=appveyor&label=Forks&logo=github)
+[![GitHub](https://img.shields.io/github/license/wukongdaily/ImmortalWrt-ImageBuilder.svg?label=LICENSE&logo=github&logoColor=%20)](https://github.com/wukongdaily/ImmortalWrt-ImageBuilder/blob/master/LICENSE)
+![GitHub Stars](https://img.shields.io/github/stars/wukongdaily/ImmortalWrt-ImageBuilder.svg?style=flat&logo=appveyor&label=Stars&logo=github)
+![GitHub Forks](https://img.shields.io/github/forks/wukongdaily/ImmortalWrt-ImageBuilder.svg?style=flat&logo=appveyor&label=Forks&logo=github)
 
 ## 🤔 这是什么？
 基于 CI 的 ImageBuilder 工作流，用于自动化构建 ImmortalWrt 固件。
 > 1、支持自定义固件大小 默认1GB 不建议设置过大 推荐1G-2G 更大需求可通过自定义插件里的扩容插件自行扩容<br>
 > 2、支持可选预安装docker（可选）支持在UI上勾选是否集成商店 （24.10.6以下）<br>
-> 3、支持按需增加[第三方软件](https://github.com/wukongdaily/store/blob/master/README.md)  如何集成 https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/209 <br>
-> 4、点击这里查看👉🏻[全部支持的机型列表](https://github.com/wukongdaily/AutoBuildImmortalWrt/blob/master/SUPPORT.md) 👈🏻<br>
-> 5、在UI上 新增luci版本的可选项，默认最新版25.12.x https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/426<br>
+> 3、支持按需增加[第三方软件](https://github.com/wukongdaily/store/blob/master/README.md)  如何集成 https://github.com/wukongdaily/ImmortalWrt-ImageBuilder/discussions/209 <br>
+> 4、点击这里查看👉🏻[全部支持的机型列表](https://github.com/wukongdaily/ImmortalWrt-ImageBuilder/blob/master/SUPPORT.md) 👈🏻<br>
+> 5、在UI上 新增luci版本的可选项，默认最新版25.12.x https://github.com/wukongdaily/ImmortalWrt-ImageBuilder/discussions/426<br>
 > 6、支持设置管理地址的ip 比如192.168.100.1 这里强调 这项功能仅针对多网口机型 单网口的逻辑还是自动获取ip模式（dhcp）无固定ip<br>
 > 7、对于[插件追新的用户 建议前往run项目 下载run后 ](https://github.com/wukongdaily/RunFilesBuilder/discussions/41)用命令sh xx.run 覆盖安装 <br>
 > 8、支持24.10.x 、25.12.x 等版本 （包括x86-64-ISO、x86-64、rockchip、全志sunxi、无线路由器）
 
-## [基本用法步骤](https://github.com/wukongdaily/AutoBuildImmortalWrt/wiki) 👈🏻
+## [基本用法步骤](https://github.com/wukongdaily/ImmortalWrt-ImageBuilder/wiki) 👈🏻
 1、fork本项目<br>
 2、在fork后的项目中 点击【action】 找到需要的工作流后 run-workflow<br>
 
@@ -58,10 +73,10 @@ ISO在虚拟机引导后 跑码结束后，在命令行输入 `ddd` 按提示 �
 - 这是一个值得推广的方法 真心希望你能吸收、学会 费了很大心思的。没错、从今往后 [任何OpenWrt都有安装器了](https://github.com/wukongdaily/img-installer)
 
 ## 如何查询imm仓库内有哪些插件
-https://mirrors.sjtug.sjtu.edu.cn/immortalwrt/releases/24.10.4/packages/x86_64/luci/
+https://mirrors.sjtug.sjtu.edu.cn/immortalwrt/releases/24.10.6/packages/x86_64/luci/
 ## 如何查询imm仓库外目前可以集成哪些插件
 https://github.com/wukongdaily/store
-> 具体方法 https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/209
+> 具体方法 https://github.com/wukongdaily/ImmortalWrt-ImageBuilder/discussions/209
 ## 【视频教程】如何集成第三方插件？
 https://www.youtube.com/watch?v=KN6AJYV1hBI <br>
 https://www.youtube.com/watch?v=7i6BQeitUtE
@@ -88,7 +103,7 @@ https://www.youtube.com/watch?v=7i6BQeitUtE
 
 ## 特别说明
 本项目构建的固件 为了易用性 wan口防火墙规则入站 是开启的，待首次调试完毕后，建议自行关闭。操作方法如下
-网络——防火墙—— wan 的入站 选择拒绝 然后保存并应用即可。更多讨论[ 请参考这个话题](https://github.com/wukongdaily/AutoBuildImmortalWrt/discussions/341)
+网络——防火墙—— wan 的入站 选择拒绝 然后保存并应用即可。更多讨论[ 请参考这个话题](https://github.com/wukongdaily/ImmortalWrt-ImageBuilder/discussions/341)
 <img width="3860" height="870" alt="image" src="https://github.com/user-attachments/assets/d826bccd-f0df-4d4a-877d-b711b81fcf1a" />
 同时此项设置的相关代码详见 `files/etc/uci-defaults/99-custom.sh` 行首
 

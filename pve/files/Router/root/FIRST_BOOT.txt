@@ -1,0 +1,18 @@
+ImmortalWrt Router（PVE）首次启动清单
+=====================================
+
+管理地址：@ROUTER_LAN_IP@（掩码 @LAN_NETMASK@）
+网卡映射：eth0=LAN/net0，eth1=WAN1/net1，eth2=WAN2/net2
+
+1. 先通过 PVE 控制台执行 passwd 设置 root 密码。
+2. 核对三个固定 MAC、PVE bridge 和 eth0/eth1/eth2 的对应关系。
+3. LAN 默认开启 DHCPv4，动态地址池使用最后一段 100-249；DHCPv6、RA 和 NDP 均关闭。
+4. 在 LuCI 中分别填写 wan1、wan2 的 PPPoE 账号密码，并勾选开机自动运行。
+5. wan1_6 会随 WAN1 PPPoE 获取 WAN IPv6 地址，但不申请前缀，也不向 LAN 发布 IPv6；WAN2 保持纯 IPv4。
+6. 两条 PPPoE 都验证后，再启用 mwan3 的 wan1/wan2 跟踪接口。
+7. mwan3 默认等权；按实际带宽调整 member weight，并为端口映射、DDNS、游戏等配置固定出口。
+8. 软件 flow offload 和 SQM 均默认关闭；先阅读仓库 docs/NETWORK-PERFORMANCE.md 再选择。
+9. Lucky 不应把 PVE 8006、LuCI、SSH 或 ttyd 直接暴露到公网。
+
+构建信息：cat /etc/pve-build-info
+首启日志：cat /root/pve-firstboot.log

@@ -1,0 +1,208 @@
+name: Build PVE dual ImmortalWrt 25.12
+
+on:
+  workflow_dispatch:
+    inputs:
+      rootfs_size_mb:
+        description: Root filesystem size for each image (MiB, 1024-8192)
+        required: true
+        default: "2048"
+        type: string
+      router_lan_ip:
+        description: Router LAN address embedded in the image
+        required: true
+        default: "192.168.100.1"
+        type: string
+      gateway_lan_ip:
+        description: Gateway LAN address embedded in the image
+        required: true
+        default: "192.168.100.2"
+        type: string
+      lan_netmask:
+        description: LAN IPv4 netmask embedded in both images
+        required: true
+        default: "255.255.255.0"
+        type: string
+      publish_release:
+        description: Also publish a uniquely tagged GitHub Release
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pve-dual-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.role }} image
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        role:
+          - Router
+          - Gateway
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Read pinned build version
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          source pve/versions.env
+          echo "version=${IMMORTALWRT_VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Validate root filesystem size
+        shell: bash
+        env:
+          ROOTFS_SIZE: ${{ inputs.rootfs_size_mb }}
+        run: |
+          set -euo pipefail
+          if ! [[ "${ROOTFS_SIZE}" =~ ^[0-9]+$ ]] ||
+             (( ROOTFS_SIZE < 1024 || ROOTFS_SIZE > 8192 )); then
+            echo "rootfs_size_mb must be an integer from 1024 through 8192" >&2
+            exit 2
+          fi
+
+      - name: Build role image in ImmortalWrt ImageBuilder
+        shell: bash
+        env:
+          IMAGE_VERSION: ${{ steps.metadata.outputs.version }}
+          ROOTFS_SIZE: ${{ inputs.rootfs_size_mb }}
+          ROUTER_LAN_IP: ${{ inputs.router_lan_ip }}
+          GATEWAY_LAN_IP: ${{ inputs.gateway_lan_ip }}
+          LAN_NETMASK: ${{ inputs.lan_netmask }}
+          ROLE: ${{ matrix.role }}
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            --user root \
+            --volume "${GITHUB_WORKSPACE}/bin:/home/build/immortalwrt/bin" \
+            --volume "${GITHUB_WORKSPACE}/pve:/home/build/immortalwrt/pve:ro" \
+            --volume "${GITHUB_WORKSPACE}/x86-64/imm25.config:/home/build/immortalwrt/.config" \
+            --env "ROOTFS_PARTSIZE=${ROOTFS_SIZE}" \
+            --env "ROUTER_LAN_IP=${ROUTER_LAN_IP}" \
+            --env "GATEWAY_LAN_IP=${GATEWAY_LAN_IP}" \
+            --env "LAN_NETMASK=${LAN_NETMASK}" \
+            "immortalwrt/imagebuilder:x86-64-openwrt-${IMAGE_VERSION}" \
+            /bin/bash /home/build/immortalwrt/pve/build.sh "${ROLE}"
+
+      - name: Collect and name artifacts
+        id: collect
+        shell: bash
+        env:
+          IMAGE_VERSION: ${{ steps.metadata.outputs.version }}
+          ROUTER_LAN_IP: ${{ inputs.router_lan_ip }}
+          GATEWAY_LAN_IP: ${{ inputs.gateway_lan_ip }}
+          ROLE: ${{ matrix.role }}
+        run: |
+          set -euo pipefail
+          role_name="${ROLE}"
+
+          mapfile -t images < <(find bin/targets/x86/64 -maxdepth 1 -type f \
+            -name '*squashfs-combined-efi.img.gz' -print)
+          if (( ${#images[@]} != 1 )); then
+            echo "Expected exactly one combined EFI image; found ${#images[@]}" >&2
+            printf '%s\n' "${images[@]}" >&2
+            exit 1
+          fi
+
+          mapfile -t manifests < <(find bin/targets/x86/64 -maxdepth 1 -type f \
+            -name '*.manifest' -print)
+          if (( ${#manifests[@]} < 1 )); then
+            echo "No ImageBuilder package manifest was produced" >&2
+            exit 1
+          fi
+
+          mkdir -p out
+          image_name="immortalwrt-${IMAGE_VERSION}-${role_name}-x86-64.img.gz"
+          cp "${images[0]}" "out/${image_name}"
+          cp "${manifests[0]}" "out/package-manifest-${role_name}.txt"
+          cp "bin/pve-meta/package-request-${ROLE}.txt" \
+            "out/package-request-${role_name}.txt"
+          sha256sum "out/${image_name}" > "out/${image_name}.sha256"
+          echo "artifact_name=pve-${role_name}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload role artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.collect.outputs.artifact_name }}
+          path: out/*
+          if-no-files-found: error
+          retention-days: 30
+
+  bundle:
+    name: Bundle checksums and optional release
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository metadata
+        uses: actions/checkout@v6
+
+      - name: Read pinned build version
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          source pve/versions.env
+          echo "version=${IMMORTALWRT_VERSION}" >> "${GITHUB_OUTPUT}"
+
+      - name: Download both role artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: pve-*
+          path: release
+          merge-multiple: true
+
+      - name: Create combined checksum file
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release
+          sha256sum -- *.img.gz > SHA256SUMS
+
+      - name: Upload complete dual-image bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: pve-dual-immortalwrt-${{ steps.metadata.outputs.version }}
+          path: release/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create release notes
+        if: ${{ inputs.publish_release }}
+        shell: bash
+        env:
+          IMAGE_VERSION: ${{ steps.metadata.outputs.version }}
+        run: |
+          cat > release/RELEASE-NOTES.md <<EOF
+          Two PVE-specific ImmortalWrt ${IMAGE_VERSION} images:
+
+          - Router: ${ROUTER_LAN_IP}, dual PPPoE/mwan3/Lucky, DHCP enabled
+          - Gateway: ${GATEWAY_LAN_IP}, OpenClash, DHCP disabled
+
+          No production credentials are embedded. Verify SHA256SUMS before import.
+          EOF
+
+      - name: Publish uniquely tagged release
+        if: ${{ inputs.publish_release }}
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: pve-immortalwrt-${{ steps.metadata.outputs.version }}-${{ github.run_number }}-${{ github.run_attempt }}
+          name: PVE ImmortalWrt ${{ steps.metadata.outputs.version }} dual images
+          body_path: release/RELEASE-NOTES.md
+          files: |
+            release/*.img.gz
+            release/*.sha256
+            release/SHA256SUMS
+            release/package-*.txt

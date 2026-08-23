@@ -1,0 +1,50 @@
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config globals 'globals'
+	option packet_steering '1'
+
+config device 'br_lan'
+	option name 'br-lan'
+	option type 'bridge'
+	list ports 'eth0'
+
+config interface 'lan'
+	option device 'br-lan'
+	option proto 'static'
+	option ipaddr '@ROUTER_LAN_IP@'
+	option netmask '@LAN_NETMASK@'
+	option delegate '0'
+
+# Router net1 in PVE.  Enter the real PPPoE credentials in LuCI and enable
+# "Bring up on boot" only after confirming the PVE NIC mapping.
+config interface 'wan1'
+	option device 'eth1'
+	option proto 'pppoe'
+	option ipv6 '1'
+	option metric '10'
+	option auto '0'
+
+# Start automatically once wan1 has been enabled and has completed PPPoE.
+# Request only an address for the router itself, never an IPv6 prefix for LAN.
+config interface 'wan1_6'
+	option device '@wan1'
+	option proto 'dhcpv6'
+	option reqaddress 'try'
+	option reqprefix 'no'
+	option delegate '0'
+	option defaultroute '1'
+	option peerdns '1'
+	option metric '10'
+	option auto '1'
+
+# net2 in PVE.
+config interface 'wan2'
+	option device 'eth2'
+	option proto 'pppoe'
+	option ipv6 '0'
+	option metric '20'
+	option auto '0'

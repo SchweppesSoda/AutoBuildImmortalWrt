@@ -1,0 +1,23 @@
+# Gateway one-arm LAN defaults.
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+config globals 'globals'
+	option packet_steering '1'
+
+config device 'br_lan'
+	option name 'br-lan'
+	option type 'bridge'
+	list ports 'eth0'
+
+config interface 'lan'
+	option device 'br-lan'
+	option proto 'static'
+	option ipaddr '@GATEWAY_LAN_IP@'
+	option netmask '@LAN_NETMASK@'
+	option gateway '@ROUTER_LAN_IP@'
+	list dns '@ROUTER_LAN_IP@'
+	option delegate '0'
