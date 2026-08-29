@@ -131,12 +131,13 @@ jobs:
             --jq '.[0].url // empty')"
 
           if [[ -z "${pr_url}" ]]; then
-            body="Automated synchronization from ${UPSTREAM_REPOSITORY}:${UPSTREAM_BRANCH}.
-
-Upstream head: ${UPSTREAM_SHA}
-Base head when checked: ${BASE_SHA}
-
-Review the upstream changes and merge this PR manually. If Git reports a conflict, the workflow fails without changing ${BASE_BRANCH}."
+            body="$(printf '%s\n' \
+              "Automated synchronization from ${UPSTREAM_REPOSITORY}:${UPSTREAM_BRANCH}." \
+              "" \
+              "Upstream head: ${UPSTREAM_SHA}" \
+              "Base head when checked: ${BASE_SHA}" \
+              "" \
+              "Review the upstream changes and merge this PR manually. If Git reports a conflict, the workflow fails without changing ${BASE_BRANCH}.")"
 
             pr_url="$(gh pr create \
               --repo "${GITHUB_REPOSITORY}" \
