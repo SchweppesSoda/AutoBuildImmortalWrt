@@ -25,6 +25,12 @@ uci -q delete network.lan.ip6assign
 uci -q delete network.lan.ip6hint
 uci -q delete network.lan.ip6class
 uci -q delete network.globals.ula_prefix
+
+# ttyd/libwebsockets binds to only one address when a device has multiple
+# IPv4 addresses. Pin it to the trusted management address instead of @lan so
+# additional guest or IoT addresses on br-lan cannot capture port 7681.
+uci -q set 'ttyd.@ttyd[0].interface=@ROUTER_LAN_IP@'
+
 uci -q set network.wan1='interface'
 uci -q set network.wan1.device='eth1'
 uci -q set network.wan1.proto='pppoe'
@@ -126,6 +132,7 @@ uci -q commit dhcp
 uci -q commit firewall
 uci -q commit irqbalance
 uci -q commit sqm
+uci -q commit ttyd
 
 if [ -x /etc/init.d/irqbalance ]; then
   /etc/init.d/irqbalance enable
