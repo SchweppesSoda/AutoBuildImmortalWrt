@@ -1,0 +1,149 @@
+name: Sync upstream
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily at 04:23 Asia/Singapore (20:23 UTC).
+    - cron: "23 20 * * *"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sync-upstream-master
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_REPOSITORY: wukongdaily/ImmortalWrt-ImageBuilder
+  UPSTREAM_BRANCH: master
+  BASE_BRANCH: pve-dual
+  SYNC_BRANCH: automation/upstream-master
+
+jobs:
+  sync:
+    name: Open upstream sync PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out the maintained branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.BASE_BRANCH }}
+          fetch-depth: 0
+
+      - name: Fetch upstream and sync branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git remote add upstream "https://github.com/${UPSTREAM_REPOSITORY}.git"
+          git fetch --no-tags upstream \
+            "+refs/heads/${UPSTREAM_BRANCH}:refs/remotes/upstream/${UPSTREAM_BRANCH}"
+          git fetch --no-tags origin \
+            "+refs/heads/${BASE_BRANCH}:refs/remotes/origin/${BASE_BRANCH}"
+
+          if git ls-remote --exit-code --heads origin \
+            "refs/heads/${SYNC_BRANCH}" >/dev/null 2>&1; then
+            git fetch --no-tags origin \
+              "+refs/heads/${SYNC_BRANCH}:refs/remotes/origin/${SYNC_BRANCH}"
+          fi
+
+      - name: Check whether synchronization is needed
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          upstream_ref="refs/remotes/upstream/${UPSTREAM_BRANCH}"
+          base_ref="refs/remotes/origin/${BASE_BRANCH}"
+          upstream_sha="$(git rev-parse "${upstream_ref}")"
+          base_sha="$(git rev-parse "${base_ref}")"
+
+          echo "upstream_sha=${upstream_sha}" >> "${GITHUB_OUTPUT}"
+          echo "base_sha=${base_sha}" >> "${GITHUB_OUTPUT}"
+
+          if git merge-base --is-ancestor "${upstream_sha}" "${base_ref}"; then
+            echo "needed=false" >> "${GITHUB_OUTPUT}"
+            echo "The maintained branch already contains upstream ${upstream_sha}." \
+              >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "needed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Build and push the synchronization branch
+        if: steps.check.outputs.needed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          upstream_ref="refs/remotes/upstream/${UPSTREAM_BRANCH}"
+          base_ref="refs/remotes/origin/${BASE_BRANCH}"
+          sync_ref="refs/remotes/origin/${SYNC_BRANCH}"
+          remote_sync_ref="refs/heads/${SYNC_BRANCH}"
+
+          if git show-ref --verify --quiet "${sync_ref}" && \
+             git merge-base --is-ancestor "${base_ref}" "${sync_ref}" && \
+             git merge-base --is-ancestor "${upstream_ref}" "${sync_ref}"; then
+            echo "The existing synchronization branch is current." \
+              >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --create "${SYNC_BRANCH}" "${base_ref}"
+
+          if ! git merge --no-edit "${upstream_ref}"; then
+            conflicts="$(git diff --name-only --diff-filter=U | paste -sd ', ' -)"
+            echo "::error::Upstream merge conflicts require manual resolution: ${conflicts}"
+            exit 1
+          fi
+
+          if git show-ref --verify --quiet "${sync_ref}"; then
+            expected_sha="$(git rev-parse "${sync_ref}")"
+            git push origin \
+              --force-with-lease="${remote_sync_ref}:${expected_sha}" \
+              "HEAD:${remote_sync_ref}"
+          else
+            git push origin \
+              --force-with-lease="${remote_sync_ref}:" \
+              "HEAD:${remote_sync_ref}"
+          fi
+
+      - name: Create the pull request
+        if: steps.check.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM_SHA: ${{ steps.check.outputs.upstream_sha }}
+          BASE_SHA: ${{ steps.check.outputs.base_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          pr_url="$(gh pr list \
+            --repo "${GITHUB_REPOSITORY}" \
+            --base "${BASE_BRANCH}" \
+            --head "${SYNC_BRANCH}" \
+            --state open \
+            --json url \
+            --jq '.[0].url // empty')"
+
+          if [[ -z "${pr_url}" ]]; then
+            body="Automated synchronization from ${UPSTREAM_REPOSITORY}:${UPSTREAM_BRANCH}.
+
+Upstream head: ${UPSTREAM_SHA}
+Base head when checked: ${BASE_SHA}
+
+Review the upstream changes and merge this PR manually. If Git reports a conflict, the workflow fails without changing ${BASE_BRANCH}."
+
+            pr_url="$(gh pr create \
+              --repo "${GITHUB_REPOSITORY}" \
+              --base "${BASE_BRANCH}" \
+              --head "${SYNC_BRANCH}" \
+              --title "Sync upstream ${UPSTREAM_BRANCH} into ${BASE_BRANCH}" \
+              --body "${body}")"
+          fi
+
+          echo "Upstream synchronization PR: ${pr_url}" >> "${GITHUB_STEP_SUMMARY}"
