@@ -29,3 +29,6 @@ kmod-nft-offload
 sqm-scripts
 luci-app-sqm
 luci-i18n-sqm-zh-cn
+
+# PO0 exposes the Router's independent WAN public addresses to the Gateway.
+po0-wan-probe

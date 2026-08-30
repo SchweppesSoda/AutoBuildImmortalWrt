@@ -39,6 +39,19 @@ else
   ls -lah /home/build/immortalwrt/packages/
 fi
 
+case "${PO0_ROLE:-none}" in
+  router-probe)
+    mkdir -p /home/build/immortalwrt/packages
+    cp /home/build/immortalwrt/po0-packages/po0-wan-probe.apk /home/build/immortalwrt/packages/
+    ;;
+  gateway-reporter)
+    mkdir -p /home/build/immortalwrt/packages
+    cp /home/build/immortalwrt/po0-packages/po0-outbound-ip-report.apk /home/build/immortalwrt/packages/
+    ;;
+  none) ;;
+  *) echo "Unsupported PO0 role: ${PO0_ROLE}" >&2; exit 1 ;;
+esac
+
 
 # 输出调试信息
 echo "$(date '+%Y-%m-%d %H:%M:%S') - 开始构建固件..."
@@ -59,6 +72,10 @@ PACKAGES="$PACKAGES openssh-sftp-server"
 
 # 文件管理器
 PACKAGES="$PACKAGES luci-i18n-filemanager-zh-cn"
+case "${PO0_ROLE:-none}" in
+  router-probe) PACKAGES="$PACKAGES po0-wan-probe" ;;
+  gateway-reporter) PACKAGES="$PACKAGES po0-outbound-ip-report" ;;
+esac
 # ======== shell/apk-custom-packages.sh =======
 # 合并imm仓库以外的第三方插件 暂时注释
 PACKAGES="$PACKAGES $CUSTOM_PACKAGES"

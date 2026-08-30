@@ -9,3 +9,6 @@ dnsmasq-full
 ruby
 ruby-yaml
 unzip
+
+# PO0 reports selected or all Router WAN addresses to the LAN Worker.
+po0-outbound-ip-report

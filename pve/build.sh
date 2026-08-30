@@ -8,6 +8,7 @@ ROOTFS_PARTSIZE="${ROOTFS_PARTSIZE:-2048}"
 ROUTER_LAN_IP="${ROUTER_LAN_IP:-192.168.100.1}"
 GATEWAY_LAN_IP="${GATEWAY_LAN_IP:-192.168.100.2}"
 LAN_NETMASK="${LAN_NETMASK:-255.255.255.0}"
+PO0_RELEASE_TAG="${PO0_RELEASE_TAG:-}"
 
 case "${ROLE}" in
   Router|Gateway) ;;
@@ -103,6 +104,16 @@ while read -r expected_sha256 scope package_path; do
   download_checked "${package_url}" "${expected_sha256}" \
     "${PACKAGES_DIR}/${package_name}"
 done < "${PVE_DIR}/vendor-packages.lock"
+case "${ROLE}" in
+  Router) PO0_PACKAGE="po0-wan-probe" ;;
+  Gateway) PO0_PACKAGE="po0-outbound-ip-report" ;;
+esac
+PO0_APK="${ROOT_DIR}/po0-packages/${PO0_PACKAGE}.apk"
+if [[ ! -f "${PO0_APK}" ]]; then
+  echo "Missing mounted PO0 package: ${PO0_APK}" >&2
+  exit 1
+fi
+cp "${PO0_APK}" "${PACKAGES_DIR}/${PO0_PACKAGE}.apk"
 
 if [[ "${ROLE}" == "Gateway" ]]; then
   mkdir -p "${FILES_DIR}/etc/openclash/core"
@@ -135,6 +146,7 @@ PACKAGE_LIST="$({
   echo "lan_netmask=${LAN_NETMASK}"
   echo "argon=${ARGON_VERSION}"
   echo "vendor_apk_commit=${VENDOR_APK_COMMIT}"
+  echo "po0_release=${PO0_RELEASE_TAG}"
   if [[ "${ROLE}" == "Gateway" ]]; then
     echo "mihomo=${MIHOMO_VERSION}"
     echo "geodata=${GEODATA_VERSION}"

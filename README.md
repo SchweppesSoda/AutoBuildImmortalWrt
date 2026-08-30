@@ -2,12 +2,14 @@
 
 本 Fork 新增两套可复用的 x86-64 ImmortalWrt 25.12 镜像：
 
-- `Router`：双 PPPoE、mwan3、Lucky、DHCPv4 和保守的转发优化默认值。
-- `Gateway`：单臂旁路网关，关闭 DHCP，预装 OpenClash 但默认不接管流量。
+- `Router`：双 PPPoE、mwan3、Lucky、DHCPv4、PO0 WAN Probe 和保守的转发优化默认值。
+- `Gateway`：单臂旁路网关，关闭 DHCP，预装 OpenClash 和 PO0 Reporter，但默认不接管流量，也不启用上报。
 - Router、Gateway 地址和网络掩码均为工作流输入；公开默认值仅用于示例。
 - 两套镜像均使用 Argon，且不包含任何生产凭据、订阅、设备清单或现场策略。
 
 `master` 保留为上游同步基线，通用 PVE 定制位于 `pve-dual` 分支。在 GitHub Actions 手动运行 **Build PVE dual ImmortalWrt 25.12**，即可生成两套 combined EFI 镜像。构建设计和通用部署步骤见 [PVE 双镜像文档](./docs/README.md)。
+
+工作流从固定的 VPS-Toolkit Release 下载并校验两个 APK。Router 首次启动只允许 Gateway 地址查询探针；Gateway 预填 Router 探针地址并设为“全部 WAN”，但 Worker URL、密钥和启用开关必须在 LuCI 中另行配置。固件不会写入或调整 Mihomo/OpenClash 的代理路径。
 
 下面保留原项目说明，供其他硬件工作流参考。
 
