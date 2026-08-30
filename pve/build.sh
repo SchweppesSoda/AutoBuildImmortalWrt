@@ -113,7 +113,14 @@ if [[ ! -f "${PO0_APK}" ]]; then
   echo "Missing mounted PO0 package: ${PO0_APK}" >&2
   exit 1
 fi
-cp "${PO0_APK}" "${PACKAGES_DIR}/${PO0_PACKAGE}.apk"
+if [[ ! "${PO0_RELEASE_TAG}" =~ ^po0-v([0-9]{4}\.[0-9]{2}\.[0-9]{2})\.([0-9]+)$ ]]; then
+  echo "Invalid PO0 release tag: ${PO0_RELEASE_TAG}" >&2
+  exit 2
+fi
+PO0_PACKAGE_VERSION="${BASH_REMATCH[1]}"
+PO0_PACKAGE_RELEASE="${BASH_REMATCH[2]}"
+PO0_REPOSITORY_APK="${PACKAGES_DIR}/${PO0_PACKAGE}-${PO0_PACKAGE_VERSION}-r${PO0_PACKAGE_RELEASE}.apk"
+cp "${PO0_APK}" "${PO0_REPOSITORY_APK}"
 
 if [[ "${ROLE}" == "Gateway" ]]; then
   mkdir -p "${FILES_DIR}/etc/openclash/core"
