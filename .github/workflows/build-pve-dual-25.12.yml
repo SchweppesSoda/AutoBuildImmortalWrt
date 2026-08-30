@@ -26,7 +26,7 @@ on:
       po0_release_tag:
         description: Fixed VPS-Toolkit release providing the PO0 APKs
         required: true
-        default: "po0-v2026.08.30.3"
+        default: "po0-v2026.08.30.4"
         type: string
       publish_release:
         description: Also publish a uniquely tagged GitHub Release
