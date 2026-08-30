@@ -41,7 +41,7 @@ on:
       po0_release_tag:
         description: "固定的 VPS-Toolkit PO0 Release tag"
         required: true
-        default: "po0-v2026.08.30.2"
+        default: "po0-v2026.08.30.3"
       po0_allowed_gateway_ip:
         description: "router-probe 允许调用探针的网关 IPv4"
         required: true
