@@ -26,7 +26,7 @@ on:
       po0_release_tag:
         description: Fixed VPS-Toolkit release providing the PO0 APKs
         required: true
-        default: "po0-v2026.08.30.1"
+        default: "po0-v2026.08.30.2"
         type: string
       publish_release:
         description: Also publish a uniquely tagged GitHub Release
@@ -97,8 +97,8 @@ jobs:
           curl --fail --location --retry 3 --retry-delay 2 \
             --output "po0-packages/${asset}" "${base_url}/${asset}"
           curl --fail --location --retry 3 --retry-delay 2 \
-            --output po0-packages/SHA256SUMS "${base_url}/SHA256SUMS"
-          checksum_line="$(grep -E "^[0-9a-fA-F]{64}[[:space:]]+\*?${asset}$" po0-packages/SHA256SUMS || true)"
+            --output po0-packages/checksums.txt "${base_url}/checksums.txt"
+          checksum_line="$(grep -E "^[0-9a-fA-F]{64}[[:space:]]+\*?${asset}$" po0-packages/checksums.txt || true)"
           if [[ -z "${checksum_line}" ]]; then
             echo "No checksum found for ${asset}" >&2
             exit 1
