@@ -1,5 +1,8 @@
 # PVE dual-image customization
 
+See [fork maintenance](MAINTENANCE.md) for branch ownership, the distinction
+between fixed build inputs and deployed package versions, and validation limits.
+
 This fork adds a reusable x86-64 PVE build profile to the upstream
 ImmortalWrt ImageBuilder project. It produces two independent images:
 

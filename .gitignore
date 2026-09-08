@@ -1,2 +1,8 @@
 # Optional local checkout for deployment-specific configuration.
 .local-private/
+
+# Disposable local validation output; production recovery data belongs elsewhere.
+/.tmp/
+/.codex-tmp/
+__pycache__/
+*.py[cod]

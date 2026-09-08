@@ -1,5 +1,7 @@
 # 本 Fork：通用 PVE 双 ImmortalWrt
 
+维护入口：[分支职责、固定依赖和验证收尾](./docs/MAINTENANCE.md)。
+
 本 Fork 新增两套可复用的 x86-64 ImmortalWrt 25.12 镜像：
 
 - `Router`：双 PPPoE、mwan3、Lucky、DHCPv4 和保守的转发优化默认值。
