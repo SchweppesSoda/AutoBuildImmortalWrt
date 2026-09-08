@@ -10,5 +10,5 @@ ruby
 ruby-yaml
 unzip
 
-# PO0 reports selected or all Router WAN addresses to the LAN Worker.
+# PO0 probes selected WANs from dedicated local sources and reports to the LAN Worker.
 po0-outbound-ip-report

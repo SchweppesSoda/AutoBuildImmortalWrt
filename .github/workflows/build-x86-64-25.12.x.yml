@@ -36,20 +36,15 @@ on:
         default: "none"
         options:
           - "none"
-          - "router-probe"
           - "gateway-reporter"
       po0_release_tag:
         description: "固定的 VPS-Toolkit PO0 Release tag"
         required: true
-        default: "po0-v2026.08.30.5"
-      po0_allowed_gateway_ip:
-        description: "router-probe 允许调用探针的网关 IPv4"
-        required: true
-        default: "192.168.88.2"
+        default: "po0-v2026.09.05.8"
       po0_router_ip:
-        description: "gateway-reporter 查询的主路由 IPv4"
+        description: "gateway-reporter 用于真实 DNS 解析的主路由 IPv4"
         required: true
-        default: "192.168.88.1"
+        default: "192.168.100.1"
       include_docker:
         description: |
           是否编译 Docker 插件
@@ -119,11 +114,10 @@ jobs:
         env:
           PO0_ROLE: ${{ inputs.po0_role }}
           PO0_RELEASE_TAG: ${{ inputs.po0_release_tag }}
-          PO0_ALLOWED_GATEWAY_IP: ${{ inputs.po0_allowed_gateway_ip }}
           PO0_ROUTER_IP: ${{ inputs.po0_router_ip }}
         run: |
           set -euo pipefail
-          [[ "${PO0_RELEASE_TAG}" =~ ^po0-v[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]] || {
+          [[ "${PO0_RELEASE_TAG}" =~ ^po0-(apk-)?v[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]] || {
             echo "Invalid PO0 release tag: ${PO0_RELEASE_TAG}" >&2
             exit 1
           }
@@ -135,11 +129,9 @@ jobs:
               (( 10#${octet} <= 255 )) || return 1
             done
           }
-          valid_ipv4 "${PO0_ALLOWED_GATEWAY_IP}" || { echo "Invalid gateway IPv4" >&2; exit 1; }
           valid_ipv4 "${PO0_ROUTER_IP}" || { echo "Invalid router IPv4" >&2; exit 1; }
 
           case "${PO0_ROLE}" in
-            router-probe) asset="po0-wan-probe.apk" ;;
             gateway-reporter) asset="po0-outbound-ip-report.apk" ;;
             *) echo "Unsupported PO0 role: ${PO0_ROLE}" >&2; exit 1 ;;
           esac
@@ -152,25 +144,20 @@ jobs:
             grep -E "  ${asset}$" checksums.txt | sha256sum -c -
           )
 
-          if [[ "${PO0_ROLE}" == "router-probe" ]]; then
-            cat > files/etc/uci-defaults/95-po0-role <<EOF
+          cat > files/etc/uci-defaults/95-po0-role <<EOF
           #!/bin/sh
-          uci -q delete po0_wan_probe.main.allowed_source
-          uci add_list po0_wan_probe.main.allowed_source='${PO0_ALLOWED_GATEWAY_IP}'
-          uci set po0_wan_probe.main.enabled='1'
-          uci commit po0_wan_probe
-          exit 0
-          EOF
-          else
-            cat > files/etc/uci-defaults/95-po0-role <<EOF
-          #!/bin/sh
-          uci set po0_outbound_ip_report.main.router_probe_url='http://${PO0_ROUTER_IP}/cgi-bin/po0-wan-probe'
+          # Sources must be selected after deployment and checked for conflicts.
+          uci set po0_outbound_ip_report.main.probe_mode='source'
+          uci set po0_outbound_ip_report.main.probe_dns_server='${PO0_ROUTER_IP}'
+          uci -q delete po0_outbound_ip_report.main.router_probe_url
+          uci -q delete po0_outbound_ip_report.main.direct_probe_resolve
+          uci -q delete po0_outbound_ip_report.main.official_source_wan1
+          uci -q delete po0_outbound_ip_report.main.official_source_wan2
           uci set po0_outbound_ip_report.main.wans='all'
           uci set po0_outbound_ip_report.main.enabled='0'
           uci commit po0_outbound_ip_report
           exit 0
           EOF
-          fi
           chmod +x files/etc/uci-defaults/95-po0-role
 
       - name: Build ImmortalWrt-x86-64-efi 25.12.x

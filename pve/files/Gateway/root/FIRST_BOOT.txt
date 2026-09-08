@@ -11,7 +11,11 @@ OpenClash：已预装但默认禁用
 2. 确认 @ROUTER_LAN_IP@ 可达，且网络中只有主路由提供 DHCP。
 3. 在 LuCI 中配置 OpenClash；不要把订阅 URL 或密钥提交到 Git。
 4. 先用一台测试客户端手工设置网关/DNS 为 @GATEWAY_LAN_IP@，验证后再配置主路由策略。
-5. 若旁路网关异常，把客户端网关和 DNS 改回 @ROUTER_LAN_IP@ 即可绕过。
+5. PO0 Reporter 预设源地址模式，真实 DNS 为 @ROUTER_LAN_IP@，但源地址留空、服务禁用。
+6. 启用上报前，在部署网络检查 DHCP/静态地址和 ARP 冲突，为所选 WAN 保留本机 /32 源地址；不要复用代理源地址。
+7. 在主路由前置源地址 WAN-only 规则（失效时 unreachable），复用 OpenClash custom firewall hook 设置仅本机 OUTPUT 源地址绕过并验证重载；固件不自动选择地址或修改这些规则。
+8. 在 LuCI 填写对应 WAN 源地址、Worker/官方配置及密钥后再启用；普通 Worker 提交沿用正常网络，出口查询和官方请求使用专用源地址直连。
+9. 若旁路网关异常，把客户端网关和 DNS 改回 @ROUTER_LAN_IP@ 即可绕过。
 
 构建信息：cat /etc/pve-build-info
 首启日志：cat /root/pve-firstboot.log

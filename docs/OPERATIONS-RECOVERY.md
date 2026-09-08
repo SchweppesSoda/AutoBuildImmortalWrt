@@ -14,6 +14,14 @@ Clients explicitly using the Gateway can be returned to the Router for both
 gateway and DNS. Critical infrastructure should not depend on the optional
 Gateway unless an independent fallback has been tested.
 
+## Reporter recovery
+
+Restore the Gateway reporter configuration from a protected backup. Recheck its
+local /32 source addresses, Router WAN-only rules, real DNS resolver and the
+OpenClash custom OUTPUT bypass before enabling it. Preserve account slots and
+credentials; do not recreate an HTTP query service on the Router. Keep ordinary
+Worker submission on its normal network path. See the [initialization steps](README.md).
+
 ## Router failure
 
 Use the PVE console to inspect interface ordering, PPPoE state, firewall rules,

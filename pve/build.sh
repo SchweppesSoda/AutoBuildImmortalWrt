@@ -104,23 +104,19 @@ while read -r expected_sha256 scope package_path; do
   download_checked "${package_url}" "${expected_sha256}" \
     "${PACKAGES_DIR}/${package_name}"
 done < "${PVE_DIR}/vendor-packages.lock"
-case "${ROLE}" in
-  Router) PO0_PACKAGE="po0-wan-probe" ;;
-  Gateway) PO0_PACKAGE="po0-outbound-ip-report" ;;
-esac
-PO0_APK="${ROOT_DIR}/po0-packages/${PO0_PACKAGE}.apk"
-if [[ ! -f "${PO0_APK}" ]]; then
-  echo "Missing mounted PO0 package: ${PO0_APK}" >&2
-  exit 1
+# The APK carries its own version; a release build number is not an APK revision.
+if [[ "${ROLE}" == "Gateway" ]]; then
+  PO0_APK="${ROOT_DIR}/po0-packages/po0-outbound-ip-report.apk"
+  if [[ ! -f "${PO0_APK}" ]]; then
+    echo "Missing mounted PO0 package: ${PO0_APK}" >&2
+    exit 1
+  fi
+  if [[ ! "${PO0_RELEASE_TAG}" =~ ^po0-(apk-)?v[0-9]{4}\.[0-9]{2}\.[0-9]{2}\.[0-9]+$ ]]; then
+    echo "Invalid PO0 release tag: ${PO0_RELEASE_TAG}" >&2
+    exit 2
+  fi
+  cp "${PO0_APK}" "${PACKAGES_DIR}/po0-outbound-ip-report.apk"
 fi
-if [[ ! "${PO0_RELEASE_TAG}" =~ ^po0-v([0-9]{4}\.[0-9]{2}\.[0-9]{2})\.([0-9]+)$ ]]; then
-  echo "Invalid PO0 release tag: ${PO0_RELEASE_TAG}" >&2
-  exit 2
-fi
-PO0_PACKAGE_VERSION="${BASH_REMATCH[1]}"
-PO0_PACKAGE_RELEASE="${BASH_REMATCH[2]}"
-PO0_REPOSITORY_APK="${PACKAGES_DIR}/${PO0_PACKAGE}-${PO0_PACKAGE_VERSION}-r${PO0_PACKAGE_RELEASE}.apk"
-cp "${PO0_APK}" "${PO0_REPOSITORY_APK}"
 
 if [[ "${ROLE}" == "Gateway" ]]; then
   mkdir -p "${FILES_DIR}/etc/openclash/core"
@@ -153,8 +149,8 @@ PACKAGE_LIST="$({
   echo "lan_netmask=${LAN_NETMASK}"
   echo "argon=${ARGON_VERSION}"
   echo "vendor_apk_commit=${VENDOR_APK_COMMIT}"
-  echo "po0_release=${PO0_RELEASE_TAG}"
   if [[ "${ROLE}" == "Gateway" ]]; then
+    echo "po0_release=${PO0_RELEASE_TAG}"
     echo "mihomo=${MIHOMO_VERSION}"
     echo "geodata=${GEODATA_VERSION}"
   fi

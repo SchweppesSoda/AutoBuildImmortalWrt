@@ -40,10 +40,6 @@ else
 fi
 
 case "${PO0_ROLE:-none}" in
-  router-probe)
-    mkdir -p /home/build/immortalwrt/packages
-    cp /home/build/immortalwrt/po0-packages/po0-wan-probe.apk /home/build/immortalwrt/packages/
-    ;;
   gateway-reporter)
     mkdir -p /home/build/immortalwrt/packages
     cp /home/build/immortalwrt/po0-packages/po0-outbound-ip-report.apk /home/build/immortalwrt/packages/
@@ -73,7 +69,6 @@ PACKAGES="$PACKAGES openssh-sftp-server"
 # 文件管理器
 PACKAGES="$PACKAGES luci-i18n-filemanager-zh-cn"
 case "${PO0_ROLE:-none}" in
-  router-probe) PACKAGES="$PACKAGES po0-wan-probe" ;;
   gateway-reporter) PACKAGES="$PACKAGES po0-outbound-ip-report" ;;
 esac
 # ======== shell/apk-custom-packages.sh =======

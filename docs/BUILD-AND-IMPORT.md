@@ -8,6 +8,8 @@ Run **Build PVE dual ImmortalWrt 25.12** from the Actions tab and provide:
 - Router LAN IPv4 address;
 - Gateway LAN IPv4 address;
 - LAN IPv4 netmask;
+- a published VPS-Toolkit `po0-apk-vYYYY.MM.DD.N` or compatible legacy
+  `po0-vYYYY.MM.DD.N` tag containing the source-mode Gateway reporter;
 - whether to publish a uniquely tagged release.
 
 The Router and Gateway addresses must be different valid IPv4 addresses. Use a
