@@ -38,7 +38,7 @@ or imports firmware.
 2. Run `bash -n` on changed shell files. Parse changed YAML and syntax-check
    embedded `run` blocks after replacing GitHub expressions with inert values.
    For first-boot changes, inspect role-specific UCI commands and empty secrets.
-3. Full validation requires the relevant GitHub Actions/ImageBuilder run,
+3. Firmware build/release or dependency-upgrade acceptance requires the relevant GitHub Actions/ImageBuilder run,
    package-manifest and checksum inspection, followed by controlled import
    acceptance. Static parsing alone is not a successful firmware build.
 4. Commit implementation separately from maintenance-only documentation.

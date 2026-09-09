@@ -15,3 +15,10 @@
   their own authorization; cleanup alone does not trigger a firmware build.
 - Use ignored `.tmp/` for local validation; inspect and preserve recovery
   dependencies outside the repository before removing existing leftovers.
+
+Complete reversible local edits and scoped commits without pausing for routine
+choices. Inspect changed scripts/workflows and their direct consumers; expand
+only for shared build contracts or evidence. Documentation changes need link
+and diff checks, not firmware builds. Build/publish/import tasks retain their
+own gates. Report offline/unavailable verification without blocking independent
+local work; use session authorization for its stated external scope.
