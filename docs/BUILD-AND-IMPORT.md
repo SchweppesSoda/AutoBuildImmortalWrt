@@ -12,8 +12,14 @@ Run **Build PVE dual ImmortalWrt 25.12** from the Actions tab and provide:
   `po0-vYYYY.MM.DD.N` tag containing the source-mode Gateway reporter;
 - whether to publish a uniquely tagged release.
 
-The Router and Gateway addresses must be different valid IPv4 addresses. Use a
+The Router and Gateway addresses must be different valid IPv4 addresses.
+Addresses and netmask use four decimal octets without leading zeros; rootfs size
+is a decimal integer from 1024 through 8192, also without leading zeros. Both
+the workflow and local builder run the same preflight before downloads. Use a
 subnet that does not overlap another local, VPN, or WAN network.
+
+Run `python3 -m unittest discover -s pve/tests -v` for offline input validation
+regressions. These use inert fixtures and do not build or publish firmware.
 
 The workflow produces two compressed combined-EFI images, package manifests,
 requested-package lists, and SHA-256 checksums. Verify `SHA256SUMS` before

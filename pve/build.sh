@@ -18,36 +18,10 @@ case "${ROLE}" in
     ;;
 esac
 
-if ! [[ "${ROOTFS_PARTSIZE}" =~ ^[0-9]+$ ]] ||
-   (( ROOTFS_PARTSIZE < 1024 || ROOTFS_PARTSIZE > 8192 )); then
-  echo "ROOTFS_PARTSIZE must be an integer from 1024 through 8192 MiB" >&2
-  exit 2
-fi
-
-validate_ipv4() {
-  local ip="$1"
-  local octets=()
-  local octet
-
-  IFS='.' read -r -a octets <<< "${ip}"
-  (( ${#octets[@]} == 4 )) || return 1
-  for octet in "${octets[@]}"; do
-    [[ "${octet}" =~ ^[0-9]{1,3}$ ]] || return 1
-    (( 10#${octet} <= 255 )) || return 1
-  done
-}
-
-for address in "${ROUTER_LAN_IP}" "${GATEWAY_LAN_IP}" "${LAN_NETMASK}"; do
-  if ! validate_ipv4 "${address}"; then
-    echo "Invalid IPv4 value: ${address}" >&2
-    exit 2
-  fi
-done
-
-if [[ "${ROUTER_LAN_IP}" == "${GATEWAY_LAN_IP}" ]]; then
-  echo "ROUTER_LAN_IP and GATEWAY_LAN_IP must be different" >&2
-  exit 2
-fi
+# Use the same preflight as CI before reading versions or downloading assets.
+# shellcheck disable=SC1091
+source "${PVE_DIR}/validate-inputs.sh"
+validate_pve_inputs
 
 # shellcheck disable=SC1091
 source "${PVE_DIR}/versions.env"

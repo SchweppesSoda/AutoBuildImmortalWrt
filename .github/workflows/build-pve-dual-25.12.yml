@@ -64,17 +64,20 @@ jobs:
           source pve/versions.env
           echo "version=${IMMORTALWRT_VERSION}" >> "${GITHUB_OUTPUT}"
 
-      - name: Validate root filesystem size
+      - name: Test build input validation
+        run: python3 -m unittest discover -s pve/tests -v
+
+      - name: Validate build inputs
         shell: bash
         env:
-          ROOTFS_SIZE: ${{ inputs.rootfs_size_mb }}
+          ROOTFS_PARTSIZE: ${{ inputs.rootfs_size_mb }}
+          ROUTER_LAN_IP: ${{ inputs.router_lan_ip }}
+          GATEWAY_LAN_IP: ${{ inputs.gateway_lan_ip }}
+          LAN_NETMASK: ${{ inputs.lan_netmask }}
         run: |
           set -euo pipefail
-          if ! [[ "${ROOTFS_SIZE}" =~ ^[0-9]+$ ]] ||
-             (( ROOTFS_SIZE < 1024 || ROOTFS_SIZE > 8192 )); then
-            echo "rootfs_size_mb must be an integer from 1024 through 8192" >&2
-            exit 2
-          fi
+          source pve/validate-inputs.sh
+          validate_pve_inputs
 
       - name: Download and verify Gateway reporter package
         if: ${{ matrix.role == 'Gateway' }}
