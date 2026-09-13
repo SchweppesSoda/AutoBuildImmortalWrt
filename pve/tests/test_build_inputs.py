@@ -52,6 +52,19 @@ class BuildInputTests(unittest.TestCase):
                     self.assertEqual(result.returncode, 2, result.stderr)
                     self.assertNotIn("PREFLIGHT_PASSED", result.stdout)
 
+    def test_requires_contiguous_netmask(self):
+        import ipaddress
+        for prefix in range(33):
+            with self.subTest(prefix=prefix):
+                mask = str(ipaddress.IPv4Network(f"0.0.0.0/{prefix}").netmask)
+                result = self.run_input({"LAN_NETMASK": mask})
+                self.assertEqual(result.returncode, 0, result.stderr)
+        for mask in ("255.0.255.0", "255.255.255.1", "254.255.0.0", "0.0.0.1"):
+            with self.subTest(mask=mask):
+                result = self.run_input({"LAN_NETMASK": mask})
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertNotIn("PREFLIGHT_PASSED", result.stdout)
+
     def test_rejects_duplicate_role_addresses(self):
         result = self.run_input({"GATEWAY_LAN_IP": "192.168.100.1"})
         self.assertEqual(result.returncode, 2, result.stderr)

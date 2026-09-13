@@ -13,7 +13,8 @@ Run **Build PVE dual ImmortalWrt 25.12** from the Actions tab and provide:
 - whether to publish a uniquely tagged release.
 
 The Router and Gateway addresses must be different valid IPv4 addresses.
-Addresses and netmask use four decimal octets without leading zeros; rootfs size
+Addresses and netmask use four decimal octets without leading zeros;
+netmask bits must be contiguous (this does not validate host/subnet topology); rootfs size
 is a decimal integer from 1024 through 8192, also without leading zeros. Both
 the workflow and local builder run the same preflight before downloads. Use a
 subnet that does not overlap another local, VPN, or WAN network.

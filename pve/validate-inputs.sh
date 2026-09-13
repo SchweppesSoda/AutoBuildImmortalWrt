@@ -25,6 +25,16 @@ validate_pve_inputs() {
       return 2
     fi
   done
+  # A dotted IPv4 value is not necessarily a contiguous network mask.
+  local mask_octets=() mask inverse
+  IFS='.' read -r -a mask_octets <<< "${LAN_NETMASK}"
+  mask=$(( (10#${mask_octets[0]} << 24) | (10#${mask_octets[1]} << 16) |
+           (10#${mask_octets[2]} << 8) | 10#${mask_octets[3]} ))
+  inverse=$(( mask ^ 4294967295 ))
+  if (( (inverse & (inverse + 1)) != 0 )); then
+    echo "LAN_NETMASK must have contiguous network bits" >&2
+    return 2
+  fi
   if [[ "${ROUTER_LAN_IP}" == "${GATEWAY_LAN_IP}" ]]; then
     echo "ROUTER_LAN_IP and GATEWAY_LAN_IP must be different" >&2
     return 2
