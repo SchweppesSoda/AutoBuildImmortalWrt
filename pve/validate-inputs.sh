@@ -12,6 +12,18 @@ validate_pve_ipv4() {
   done
 }
 
+pve_ipv4_number() {
+  local octets=()
+  IFS='.' read -r -a octets <<< "$1"
+  printf '%s\n' "$(( (10#${octets[0]} << 24) | (10#${octets[1]} << 16) |
+                     (10#${octets[2]} << 8) | 10#${octets[3]} ))"
+}
+
+validate_pve_unicast() {
+  local first=$(( $1 >> 24 ))
+  (( first > 0 && first < 224 && first != 127 ))
+}
+
 validate_pve_inputs() {
   local address
   if ! [[ "${ROOTFS_PARTSIZE:-}" =~ ^[1-8][0-9]{3}$ ]] ||
@@ -37,6 +49,35 @@ validate_pve_inputs() {
   fi
   if [[ "${ROUTER_LAN_IP}" == "${GATEWAY_LAN_IP}" ]]; then
     echo "ROUTER_LAN_IP and GATEWAY_LAN_IP must be different" >&2
+    return 2
+  fi
+  local router gateway network broadcast pool_start pool_end
+  router=$(pve_ipv4_number "$ROUTER_LAN_IP")
+  gateway=$(pve_ipv4_number "$GATEWAY_LAN_IP")
+  network=$(( router & mask ))
+  broadcast=$(( network | inverse ))
+  if (( (gateway & mask) != network )); then
+    echo "Router and Gateway must belong to the same LAN subnet" >&2
+    return 2
+  fi
+  for address in "$router" "$gateway"; do
+    if ! validate_pve_unicast "$address" ||
+       (( address <= network || address >= broadcast )); then
+      echo "LAN addresses must be usable unicast hosts, not network or broadcast addresses" >&2
+      return 2
+    fi
+  done
+  # OpenWrt DHCP start is an offset from the network, not the last octet.
+  pool_start=$(( network + 100 ))
+  pool_end=$(( pool_start + 150 - 1 ))
+  if (( pool_end >= broadcast )) ||
+     ! validate_pve_unicast "$pool_start" || ! validate_pve_unicast "$pool_end"; then
+    echo "LAN subnet cannot contain the DHCP pool at network offsets 100 through 249" >&2
+    return 2
+  fi
+  if (( (router >= pool_start && router <= pool_end) ||
+        (gateway >= pool_start && gateway <= pool_end) )); then
+    echo "Router and Gateway must not overlap the DHCP pool" >&2
     return 2
   fi
 }

@@ -12,10 +12,13 @@ Run **Build PVE dual ImmortalWrt 25.12** from the Actions tab and provide:
   `po0-vYYYY.MM.DD.N` tag containing the source-mode Gateway reporter;
 - whether to publish a uniquely tagged release.
 
-The Router and Gateway addresses must be different valid IPv4 addresses.
-Addresses and netmask use four decimal octets without leading zeros;
-netmask bits must be contiguous (this does not validate host/subnet topology); rootfs size
-is a decimal integer from 1024 through 8192, also without leading zeros. Both
+The Router and Gateway must be different usable unicast hosts in the same LAN
+subnet, outside its DHCP pool. Network and broadcast addresses are rejected.
+Addresses and netmask use four decimal octets without leading zeros, and
+netmask bits must be contiguous. The fixed DHCP pool contains 150 addresses
+starting at network address + 100; the entire pool must fit below the broadcast
+address. Valid larger subnets such as `/23` are supported; `/25` is too small.
+Rootfs size is a decimal integer from 1024 through 8192, without leading zeros. Both
 the workflow and local builder run the same preflight before downloads. Use a
 subnet that does not overlap another local, VPN, or WAN network.
 

@@ -57,7 +57,7 @@ uci -q set network.wan2.auto='0'
 uci -q delete network.wan2_6
 uci -q set network.globals.packet_steering='1'
 
-# Keep LAN IPv4-only. dnsmasq serves last octets 100 through 249 while odhcpd
+# Keep LAN IPv4-only. dnsmasq serves network offsets 100 through 249 while odhcpd
 # provides no DHCPv6, RA, or NDP service on the LAN.
 uci -q set dhcp.lan.interface='lan'
 uci -q set dhcp.lan.ignore='0'

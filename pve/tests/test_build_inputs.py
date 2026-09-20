@@ -53,12 +53,6 @@ class BuildInputTests(unittest.TestCase):
                     self.assertNotIn("PREFLIGHT_PASSED", result.stdout)
 
     def test_requires_contiguous_netmask(self):
-        import ipaddress
-        for prefix in range(33):
-            with self.subTest(prefix=prefix):
-                mask = str(ipaddress.IPv4Network(f"0.0.0.0/{prefix}").netmask)
-                result = self.run_input({"LAN_NETMASK": mask})
-                self.assertEqual(result.returncode, 0, result.stderr)
         for mask in ("255.0.255.0", "255.255.255.1", "254.255.0.0", "0.0.0.1"):
             with self.subTest(mask=mask):
                 result = self.run_input({"LAN_NETMASK": mask})
@@ -69,6 +63,46 @@ class BuildInputTests(unittest.TestCase):
         result = self.run_input({"GATEWAY_LAN_IP": "192.168.100.1"})
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn("must be different", result.stderr)
+
+    def test_rejects_invalid_lan_topology(self):
+        cases = (
+            {"GATEWAY_LAN_IP": "192.168.101.2"},
+            {"ROUTER_LAN_IP": "192.168.100.0"},
+            {"GATEWAY_LAN_IP": "192.168.100.255"},
+            {"LAN_NETMASK": "255.255.255.128"},
+            {"LAN_NETMASK": "255.255.255.252"},
+            {"LAN_NETMASK": "255.255.255.255"},
+            {"ROUTER_LAN_IP": "127.0.0.1", "GATEWAY_LAN_IP": "127.0.0.2"},
+            {"ROUTER_LAN_IP": "0.0.0.1", "GATEWAY_LAN_IP": "0.0.0.2"},
+            {"ROUTER_LAN_IP": "224.0.0.1", "GATEWAY_LAN_IP": "224.0.0.2"},
+            {"LAN_NETMASK": "0.0.0.0"},
+        )
+        for overrides in cases:
+            with self.subTest(overrides=overrides):
+                result = self.run_input(overrides)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertNotIn("PREFLIGHT_PASSED", result.stdout)
+
+    def test_static_addresses_cannot_overlap_either_pool_boundary(self):
+        for role in ("ROUTER_LAN_IP", "GATEWAY_LAN_IP"):
+            for host in (100, 180, 249):
+                with self.subTest(role=role, host=host):
+                    result = self.run_input({role: f"192.168.100.{host}"})
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertIn("overlap the DHCP pool", result.stderr)
+
+    def test_valid_larger_subnets_use_network_offsets_not_last_octets(self):
+        cases = (
+            {"GATEWAY_LAN_IP": "192.168.101.100", "LAN_NETMASK": "255.255.254.0"},
+            {"ROUTER_LAN_IP": "192.168.101.249", "LAN_NETMASK": "255.255.254.0"},
+            {"ROUTER_LAN_IP": "10.20.3.1", "GATEWAY_LAN_IP": "10.20.4.2", "LAN_NETMASK": "255.255.0.0"},
+            {"ROUTER_LAN_IP": "192.168.100.99", "GATEWAY_LAN_IP": "192.168.100.250"},
+        )
+        for overrides in cases:
+            with self.subTest(overrides=overrides):
+                result = self.run_input(overrides)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("PREFLIGHT_PASSED", result.stdout)
 
 
 if __name__ == "__main__":

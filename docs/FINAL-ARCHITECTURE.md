@@ -25,7 +25,7 @@ The workflow defaults are deliberately generic:
 | --- | --- |
 | Router | `192.168.100.1/24` |
 | Gateway | `192.168.100.2/24` |
-| Router DHCP pool | last octets `100-249` |
+| Router DHCP pool | network address + `100` through `249` (`192.168.100.100-249` in this `/24` example) |
 
 The addresses and netmask are workflow inputs. They are rendered into both the
 static network files and first-boot scripts during the build. Do not reuse the
