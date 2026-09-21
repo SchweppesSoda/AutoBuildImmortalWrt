@@ -33,6 +33,9 @@ jobs:
           ref: ${{ env.BASE_BRANCH }}
           fetch-depth: 0
 
+      - name: Test the synchronization gate offline
+        run: python3 -m unittest discover -s pve/tests -p test_sync_workflow_gate.py -v
+
       - name: Fetch upstream and sync branch
         shell: bash
         run: |
@@ -72,7 +75,8 @@ jobs:
             echo "needed=true" >> "${GITHUB_OUTPUT}"
           fi
 
-      - name: Build and push the synchronization branch
+      - name: Prepare synchronization and gate workflow changes
+        id: sync
         if: steps.check.outputs.needed == 'true'
         shell: bash
         run: |
@@ -82,12 +86,15 @@ jobs:
           base_ref="refs/remotes/origin/${BASE_BRANCH}"
           sync_ref="refs/remotes/origin/${SYNC_BRANCH}"
           remote_sync_ref="refs/heads/${SYNC_BRANCH}"
+          # Keep the reviewed gate from the maintained checkout before merging.
+          cp pve/sync_workflow_gate.py "${RUNNER_TEMP}/sync_workflow_gate.py"
 
           if git show-ref --verify --quiet "${sync_ref}" && \
              git merge-base --is-ancestor "${base_ref}" "${sync_ref}" && \
              git merge-base --is-ancestor "${upstream_ref}" "${sync_ref}"; then
             echo "The existing synchronization branch is current." \
               >> "${GITHUB_STEP_SUMMARY}"
+            echo "ready=true" >> "${GITHUB_OUTPUT}"
             exit 0
           fi
 
@@ -101,6 +108,30 @@ jobs:
             exit 1
           fi
 
+          gate_args=(--base "${base_ref}")
+          if git show-ref --verify --quiet "${sync_ref}"; then
+            gate_args+=(--published "${sync_ref}")
+          fi
+          python3 "${RUNNER_TEMP}/sync_workflow_gate.py" "${gate_args[@]}" \
+            > "${RUNNER_TEMP}/sync-gate.txt"
+          if grep -qx 'manual_required=true' "${RUNNER_TEMP}/sync-gate.txt"; then
+            echo "manual_required=true" >> "${GITHUB_OUTPUT}"
+            echo "ready=false" >> "${GITHUB_OUTPUT}"
+            mkdir -p "${RUNNER_TEMP}/upstream-sync-review"
+            git diff --binary "${base_ref}" HEAD \
+              > "${RUNNER_TEMP}/upstream-sync-review/candidate.patch"
+            cp "${RUNNER_TEMP}/sync-gate.txt" "${RUNNER_TEMP}/upstream-sync-review/decision.txt"
+            printf 'base=%s\nupstream=%s\ncandidate=%s\n' \
+              "$(git rev-parse "${base_ref}")" "$(git rev-parse "${upstream_ref}")" "$(git rev-parse HEAD)" \
+              > "${RUNNER_TEMP}/upstream-sync-review/commits.txt"
+            echo '::notice::Manual synchronization required: workflow files changed; no branch was pushed.'
+            printf '## Manual synchronization required\n\nNo branch was pushed and no PR was created. Review the attached candidate patch against the recorded base and upstream commits. A maintainer must perform the synchronization with their existing authorized workflow-editing identity.\n\n' \
+              >> "${GITHUB_STEP_SUMMARY}"
+            cat "${RUNNER_TEMP}/sync-gate.txt" >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+          grep -qx 'manual_required=false' "${RUNNER_TEMP}/sync-gate.txt"
+
           if git show-ref --verify --quiet "${sync_ref}"; then
             expected_sha="$(git rev-parse "${sync_ref}")"
             git push origin \
@@ -111,9 +142,19 @@ jobs:
               --force-with-lease="${remote_sync_ref}:" \
               "HEAD:${remote_sync_ref}"
           fi
+          echo "ready=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Preserve the manually reviewed synchronization candidate
+        if: steps.sync.outputs.manual_required == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: upstream-sync-review-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/upstream-sync-review/
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Create the pull request
-        if: steps.check.outputs.needed == 'true'
+        if: steps.sync.outputs.ready == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           UPSTREAM_SHA: ${{ steps.check.outputs.upstream_sha }}
