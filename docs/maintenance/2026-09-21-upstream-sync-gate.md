@@ -19,7 +19,12 @@ only takes effect after a separately authorized workflow publication/run.
 
 Four offline local-Git tests cover no change, ordinary updates, workflow
 addition/deletion, drift from the published sync branch and invalid refs.
-Workflow YAML and shell blocks are parsed locally; no GitHub push, PR, CI run
-or permission change was performed. The existing conflict branch was retained.
+Independent validation also executed the workflow's actual Prepare Bash block
+against three disposable Git histories and local bare origins, with external
+Git protocols disabled: an ordinary update pushed only to that local origin;
+a workflow update preserved the origin ref and produced all three review files;
+a real merge conflict returned nonzero before any push. No real repository ref
+was changed. Workflow YAML and shell blocks were parsed locally; no GitHub
+push, PR, CI run or permission change was performed.
 Rollback is a scoped source revert; neither current firmware nor release tags
 are altered by this workflow change.
