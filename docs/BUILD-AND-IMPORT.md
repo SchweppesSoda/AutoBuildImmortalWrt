@@ -25,9 +25,17 @@ subnet that does not overlap another local, VPN, or WAN network.
 Run `python3 -m unittest discover -s pve/tests -v` for offline input validation
 regressions. These use inert fixtures and do not build or publish firmware.
 
-The workflow produces two compressed combined-EFI images, package manifests,
-requested-package lists, and SHA-256 checksums. Verify `SHA256SUMS` before
-importing an image.
+The workflow executes the reviewed linux/amd64 ImageBuilder digest in
+`pve/versions.env`, not the mutable tag. It produces two compressed combined-EFI
+images, actual package manifests, requested-package lists, build/source/image
+metadata, copied version/vendor locks, actual APK/runtime hashes and SHA-256
+checksums. Verify `SHA256SUMS` before importing an image. A manual invocation
+without a confirmed container reference records `unverified-local-build`.
+
+This records exact inputs but does not archive every distribution feed package
+or promise a byte-identical offline firmware rebuild. Retain the accepted image
+as the recovery artifact. Updating a pin requires reviewing the official digest
+and architecture, a real build, manifest comparison and separate import approval.
 
 ## Suggested PVE mapping
 

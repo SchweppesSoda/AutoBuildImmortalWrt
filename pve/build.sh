@@ -25,6 +25,10 @@ validate_pve_inputs
 
 # shellcheck disable=SC1091
 source "${PVE_DIR}/versions.env"
+if [[ -n "${IMAGEBUILDER_USED:-}" && "${IMAGEBUILDER_USED}" != "${IMAGEBUILDER_IMAGE}" ]]; then
+  echo 'ImageBuilder execution reference does not match the reviewed pin' >&2
+  exit 2
+fi
 
 FILES_DIR="$(mktemp -d /tmp/pve-files.XXXXXX)"
 DOWNLOAD_DIR="$(mktemp -d /tmp/pve-downloads.XXXXXX)"
@@ -117,6 +121,9 @@ PACKAGE_LIST="$({
 {
   echo "role=${ROLE}"
   echo "immortalwrt=${IMMORTALWRT_VERSION}"
+  echo "imagebuilder_expected=${IMAGEBUILDER_IMAGE}"
+  echo "imagebuilder_used=${IMAGEBUILDER_USED:-unverified-local-build}"
+  echo "source_commit=${SOURCE_COMMIT:-unknown}"
   echo "rootfs_mib=${ROOTFS_PARTSIZE}"
   echo "router_lan_ip=${ROUTER_LAN_IP}"
   echo "gateway_lan_ip=${GATEWAY_LAN_IP}"
@@ -129,6 +136,20 @@ PACKAGE_LIST="$({
     echo "geodata=${GEODATA_VERSION}"
   fi
 } > "${FILES_DIR}/etc/pve-build-info"
+
+cp "${FILES_DIR}/etc/pve-build-info" "${ROOT_DIR}/bin/pve-meta/build-info-${ROLE}.txt"
+cp "${PVE_DIR}/versions.env" "${ROOT_DIR}/bin/pve-meta/versions-${ROLE}.env"
+cp "${PVE_DIR}/vendor-packages.lock" "${ROOT_DIR}/bin/pve-meta/vendor-packages-${ROLE}.lock"
+# Store actual selected APK and unpacked runtime hashes as well as the pins.
+# Paths are relative to each input tree; no deployment credentials are read.
+(
+  cd "${PACKAGES_DIR}"
+  find . -maxdepth 1 -type f -name '*.apk' -print0 | sort -z | xargs -0 -r sha256sum
+) > "${ROOT_DIR}/bin/pve-meta/apk-inputs-${ROLE}.sha256"
+if [[ "${ROLE}" == "Gateway" ]]; then
+  (cd "${FILES_DIR}" && sha256sum etc/openclash/core/clash_meta etc/openclash/GeoIP.dat etc/openclash/GeoSite.dat) \
+    > "${ROOT_DIR}/bin/pve-meta/runtime-inputs-${ROLE}.sha256"
+fi
 
 tr ' ' '\n' <<< "${PACKAGE_LIST}" \
   > "${ROOT_DIR}/bin/pve-meta/package-request-${ROLE}.txt"

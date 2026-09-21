@@ -63,6 +63,8 @@ jobs:
           set -euo pipefail
           source pve/versions.env
           echo "version=${IMMORTALWRT_VERSION}" >> "${GITHUB_OUTPUT}"
+          [[ "${IMAGEBUILDER_IMAGE}" =~ ^immortalwrt/imagebuilder@sha256:[a-f0-9]{64}$ ]]
+          echo "imagebuilder=${IMAGEBUILDER_IMAGE}" >> "${GITHUB_OUTPUT}"
 
       - name: Test build input validation
         run: python3 -m unittest discover -s pve/tests -v
@@ -108,6 +110,8 @@ jobs:
         shell: bash
         env:
           IMAGE_VERSION: ${{ steps.metadata.outputs.version }}
+          IMAGEBUILDER_IMAGE: ${{ steps.metadata.outputs.imagebuilder }}
+          SOURCE_COMMIT: ${{ github.sha }}
           ROOTFS_SIZE: ${{ inputs.rootfs_size_mb }}
           ROUTER_LAN_IP: ${{ inputs.router_lan_ip }}
           GATEWAY_LAN_IP: ${{ inputs.gateway_lan_ip }}
@@ -118,6 +122,7 @@ jobs:
           set -euo pipefail
           mkdir -p po0-packages
           docker run --rm \
+            --platform linux/amd64 \
             --user root \
             --volume "${GITHUB_WORKSPACE}/bin:/home/build/immortalwrt/bin" \
             --volume "${GITHUB_WORKSPACE}/pve:/home/build/immortalwrt/pve:ro" \
@@ -128,7 +133,9 @@ jobs:
             --env "GATEWAY_LAN_IP=${GATEWAY_LAN_IP}" \
             --env "LAN_NETMASK=${LAN_NETMASK}" \
             --env "PO0_RELEASE_TAG=${PO0_RELEASE_TAG}" \
-            "immortalwrt/imagebuilder:x86-64-openwrt-${IMAGE_VERSION}" \
+            --env "IMAGEBUILDER_USED=${IMAGEBUILDER_IMAGE}" \
+            --env "SOURCE_COMMIT=${SOURCE_COMMIT}" \
+            "${IMAGEBUILDER_IMAGE}" \
             /bin/bash /home/build/immortalwrt/pve/build.sh "${ROLE}"
 
       - name: Collect and name artifacts
@@ -169,7 +176,14 @@ jobs:
           cp "${manifests[0]}" "out/package-manifest-${role_name}.txt"
           cp "bin/pve-meta/package-request-${ROLE}.txt" \
             "out/package-request-${role_name}.txt"
-          sha256sum "out/${image_name}" > "out/${image_name}.sha256"
+          cp "bin/pve-meta/build-info-${ROLE}.txt" "out/"
+          cp "bin/pve-meta/versions-${ROLE}.env" "out/"
+          cp "bin/pve-meta/vendor-packages-${ROLE}.lock" "out/"
+          cp "bin/pve-meta/apk-inputs-${ROLE}.sha256" "out/"
+          if [[ "${ROLE}" == "Gateway" ]]; then
+            cp "bin/pve-meta/runtime-inputs-${ROLE}.sha256" "out/"
+          fi
+          (cd out && sha256sum "${image_name}") > "out/${image_name}.sha256"
           echo "artifact_name=pve-${role_name}" >> "${GITHUB_OUTPUT}"
 
       - name: Upload role artifact
@@ -211,7 +225,7 @@ jobs:
         run: |
           set -euo pipefail
           cd release
-          sha256sum -- *.img.gz > SHA256SUMS
+          sha256sum -- *.img.gz package-*.txt build-info-*.txt versions-*.env vendor-packages-*.lock *-inputs-*.sha256 > SHA256SUMS
 
       - name: Upload complete dual-image bundle
         uses: actions/upload-artifact@v7
@@ -252,3 +266,6 @@ jobs:
             release/*.sha256
             release/SHA256SUMS
             release/package-*.txt
+            release/build-info-*.txt
+            release/versions-*.env
+            release/vendor-packages-*.lock
