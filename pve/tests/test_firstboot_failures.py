@@ -107,8 +107,6 @@ class FirstBootTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stderr + log)
             for entry in trace:
                 step, action, _ = entry.split("|", 2)
-                if action == "get":  # SQM queue may legitimately be absent.
-                    continue
                 with self.subTest(script=script, step=step, action=action):
                     result, log, failed_trace = self.run_script(script, fail_at=step)
                     self.assertNotEqual(0, result.returncode, log)

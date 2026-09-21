@@ -11,6 +11,11 @@ is skipped. UCI arguments and raw errors are not logged. There is no blanket
 `set -e`, no new package dependency, no change to PPPoE/proxy safe defaults,
 and no reporter version upgrade.
 
+Independent review also identified the optional SQM lookup: a failed `get`
+could be mistaken for an absent queue. That lookup now uses the same successful
+package-read prerequisite as optional deletion. Fault injection includes it;
+there is no skipped UCI read in the required-operation test.
+
 Offline validation runs the real four scripts against an in-memory UCI and
 isolated init-script fixtures. Every required UCI step is failed in turn;
 failure is nonzero, stops subsequent UCI operations and emits no completion

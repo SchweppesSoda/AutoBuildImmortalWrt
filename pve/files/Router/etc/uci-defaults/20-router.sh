@@ -127,7 +127,7 @@ pve_uci -q set 'firewall.@defaults[0].fullcone6=0'
 # Useful with four vCPUs and VirtIO multiqueue.  ImmortalWrt's built-in
 # autocore separately configures RFS and NIC checksum/GSO/TSO offloads.
 pve_uci -q set irqbalance.irqbalance.enabled='1'
-if uci -q get 'sqm.@queue[0]' >/dev/null; then
+if pve_has_key 'sqm.@queue[0]'; then
   pve_uci -q set 'sqm.@queue[0].enabled=0'
 fi
 

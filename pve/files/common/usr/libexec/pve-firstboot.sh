@@ -14,7 +14,7 @@ pve_uci() {
   uci "$@" 2>/dev/null || pve_fail 'required UCI operation failed'
 }
 
-pve_delete_if_present() {
+pve_has_key() {
   local key=$1 package snapshot line
   package=${key%%.*}
   # A failed get alone cannot distinguish an absent option from a broken
@@ -22,12 +22,18 @@ pve_delete_if_present() {
   snapshot="$(uci -q show "$package" 2>/dev/null)" || pve_fail 'UCI package read failed'
   while IFS= read -r line; do
     case "$line" in
-      "$key="*) pve_uci -q delete "$key"; return 0 ;;
+      "$key="*) return 0 ;;
     esac
   done <<EOF
 $snapshot
 EOF
-  return 0
+  return 1
+}
+
+pve_delete_if_present() {
+  if pve_has_key "$1"; then
+    pve_uci -q delete "$1"
+  fi
 }
 
 pve_service() {
