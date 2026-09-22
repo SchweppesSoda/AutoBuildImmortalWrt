@@ -126,6 +126,7 @@ jobs:
             --user root \
             --volume "${GITHUB_WORKSPACE}/bin:/home/build/immortalwrt/bin" \
             --volume "${GITHUB_WORKSPACE}/pve:/home/build/immortalwrt/pve:ro" \
+            --volume "${GITHUB_WORKSPACE}/shell/stage-reporter-apk.py:/home/build/immortalwrt/stage-reporter-apk.py:ro" \
             --volume "${GITHUB_WORKSPACE}/po0-packages:/home/build/immortalwrt/po0-packages:ro" \
             --volume "${GITHUB_WORKSPACE}/x86-64/imm25.config:/home/build/immortalwrt/.config" \
             --env "ROOTFS_PARTSIZE=${ROOTFS_SIZE}" \

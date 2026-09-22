@@ -42,7 +42,10 @@ fi
 case "${PO0_ROLE:-none}" in
   gateway-reporter)
     mkdir -p /home/build/immortalwrt/packages
-    cp /home/build/immortalwrt/po0-packages/po0-outbound-ip-report.apk /home/build/immortalwrt/packages/
+    python3 shell/stage-reporter-apk.py \
+      /home/build/immortalwrt/staging_dir/host/bin/apk \
+      /home/build/immortalwrt/po0-packages/po0-outbound-ip-report.apk \
+      /home/build/immortalwrt/packages || exit 1
     ;;
   none) ;;
   *) echo "Unsupported PO0 role: ${PO0_ROLE}" >&2; exit 1 ;;

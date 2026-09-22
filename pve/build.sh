@@ -93,7 +93,8 @@ if [[ "${ROLE}" == "Gateway" ]]; then
     echo "Invalid PO0 release tag: ${PO0_RELEASE_TAG}" >&2
     exit 2
   fi
-  cp "${PO0_APK}" "${PACKAGES_DIR}/po0-outbound-ip-report.apk"
+  python3 "${ROOT_DIR}/stage-reporter-apk.py" \
+    "${ROOT_DIR}/staging_dir/host/bin/apk" "${PO0_APK}" "${PACKAGES_DIR}"
 fi
 
 if [[ "${ROLE}" == "Gateway" ]]; then
